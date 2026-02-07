@@ -31,10 +31,10 @@ describe('InsightEngine', () => {
   };
 
   describe('INSIGHT_RULES', () => {
-    it('should have rules with unique priorities', () => {
+    it('should be ordered by descending priority', () => {
       const priorities = INSIGHT_RULES.map(r => r.priority);
-      const uniquePriorities = new Set(priorities);
-      expect(uniquePriorities.size).toBe(priorities.length);
+      const sortedPriorities = [...priorities].sort((a, b) => b - a);
+      expect(priorities).toEqual(sortedPriorities);
     });
 
     it('should have a catch-all rule (balanced)', () => {
