@@ -1,0 +1,9 @@
+# Placeholder for Splash Screen
+
+Create a 1242x2436 PNG splash screen and save it as `splash.png` in this folder.
+
+The splash screen should match the app theme:
+- Dark background (#0A0A0F)
+- App name "Sonic State" centered
+- Optional: subtle sound wave or microphone graphic
+- Clean, minimal design

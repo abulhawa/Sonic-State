@@ -1,0 +1,8 @@
+# Placeholder for Android Adaptive Icon
+
+Create a 1024x1024 PNG foreground icon and save it as `adaptive-icon.png` in this folder.
+
+For Android adaptive icons:
+- The icon should have a transparent background
+- The foreground will be placed on top of a background color (defined in app.json)
+- Keep the main icon content within the safe zone (center 66%)
