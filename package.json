@@ -14,7 +14,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "expo": "~50.0.14",
+    "expo": "~54.0.33",
     "expo-av": "~13.10.5",
     "expo-status-bar": "~1.11.1",
     "react": "18.2.0",
