@@ -13,26 +13,25 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { RouteProp } from '@react-navigation/native';
 import { extractFeatures } from '@/analysis/FeatureExtractor';
 import { calculateScores, calculateConfidence } from '@/scoring/ScoreCalculator';
 import { generateInsight } from '@/scoring/InsightEngine';
-import { AudioBuffer, AnalysisResult } from '@/analysis/types';
+import { AnalysisResult } from '@/analysis/types';
+import { consumePendingAudioBuffer } from '@/audio/AudioBufferStore';
 import Logger from '@/utils/Logger';
 
 type RootStackParamList = {
   Home: undefined;
   Recording: undefined;
-  Processing: { audioBuffer: AudioBuffer };
+  Processing: undefined;
   Results: { result: AnalysisResult };
 };
 
 type ProcessingScreenProps = {
   navigation: StackNavigationProp<RootStackParamList, 'Processing'>;
-  route: RouteProp<RootStackParamList, 'Processing'>;
 };
 
-const ProcessingScreen: React.FC<ProcessingScreenProps> = ({ navigation, route }) => {
+const ProcessingScreen: React.FC<ProcessingScreenProps> = ({ navigation }) => {
   const processingRef = useRef(false);
 
   useEffect(() => {
@@ -42,7 +41,10 @@ const ProcessingScreen: React.FC<ProcessingScreenProps> = ({ navigation, route }
 
     const processAudio = async () => {
       try {
-        const { audioBuffer } = route.params;
+        const audioBuffer = consumePendingAudioBuffer();
+        if (!audioBuffer) {
+          throw new Error('No pending audio buffer available');
+        }
 
         Logger.log('analysis_started', {
           durationMs: audioBuffer.durationMs,
@@ -110,7 +112,7 @@ const ProcessingScreen: React.FC<ProcessingScreenProps> = ({ navigation, route }
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [navigation, route.params]);
+  }, [navigation]);
 
   return (
     <SafeAreaView style={styles.container}>

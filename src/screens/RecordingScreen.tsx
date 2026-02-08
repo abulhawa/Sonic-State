@@ -16,12 +16,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Audio } from 'expo-av';
 import { startRecording, cleanupRecording } from '@/audio/AudioRecorder';
+import { setPendingAudioBuffer } from '@/audio/AudioBufferStore';
 import Logger from '@/utils/Logger';
 
 type RootStackParamList = {
   Home: undefined;
   Recording: undefined;
-  Processing: { audioBuffer: unknown };
+  Processing: undefined;
 };
 
 type RecordingScreenProps = {
@@ -142,7 +143,8 @@ const RecordingScreen: React.FC<RecordingScreenProps> = ({ navigation }) => {
       recordingRef.current = null;
 
       // Navigate to processing
-      navigation.replace('Processing', { audioBuffer });
+      setPendingAudioBuffer(audioBuffer);
+      navigation.replace('Processing');
     } catch (error) {
       Logger.error('Failed to stop recording', error);
       Alert.alert(

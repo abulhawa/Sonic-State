@@ -15,12 +15,11 @@ import PrivacyScreen from '@/screens/PrivacyScreen';
 import UpgradeScreen from '@/screens/UpgradeScreen';
 
 import { AnalysisResult } from '@/analysis/types';
-import { AudioBuffer } from '@/analysis/types';
 
 export type RootStackParamList = {
   Home: undefined;
   Recording: undefined;
-  Processing: { audioBuffer: AudioBuffer };
+  Processing: undefined;
   Results: { result: AnalysisResult };
   Privacy: undefined;
   Upgrade: undefined;
