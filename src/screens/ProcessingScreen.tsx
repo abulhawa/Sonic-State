@@ -12,10 +12,11 @@ import {
   SafeAreaView,
   StatusBar,
 } from 'react-native';
-import { StackNavigationProp, RouteProp } from '@react-navigation/stack';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RouteProp } from '@react-navigation/native';
 import { extractFeatures } from '@/analysis/FeatureExtractor';
 import { calculateScores, calculateConfidence } from '@/scoring/ScoreCalculator';
-import { generateInsight, getInsightCategory } from '@/scoring/InsightEngine';
+import { generateInsight } from '@/scoring/InsightEngine';
 import { AudioBuffer, AnalysisResult } from '@/analysis/types';
 import Logger from '@/utils/Logger';
 
@@ -56,7 +57,6 @@ const ProcessingScreen: React.FC<ProcessingScreenProps> = ({ navigation, route }
 
         // Step 3: Generate insight
         const insight = generateInsight(features, scores);
-        const category = getInsightCategory(features, scores);
         const confidence = calculateConfidence(features);
 
         // Step 4: Build result

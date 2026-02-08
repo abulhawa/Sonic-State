@@ -15,6 +15,7 @@ export type LogEvent =
   | 'retry_clicked'
   | 'learn_more_clicked'
   | 'upgrade_screen_viewed'
+  | 'notify_me_clicked'
   | 'privacy_screen_viewed'
   | 'permission_granted'
   | 'permission_denied';

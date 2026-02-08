@@ -13,7 +13,8 @@ import {
   StatusBar,
   ScrollView,
 } from 'react-native';
-import { StackNavigationProp, RouteProp } from '@react-navigation/stack';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RouteProp } from '@react-navigation/native';
 import ScoreBar from '@/components/ScoreBar';
 import InsightCard from '@/components/InsightCard';
 import { AnalysisResult } from '@/analysis/types';
