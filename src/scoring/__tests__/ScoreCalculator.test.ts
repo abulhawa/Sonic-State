@@ -179,6 +179,22 @@ describe('ScoreCalculator', () => {
       expect(scores1.tension).toBe(scores2.tension);
       expect(scores1.clarity).toBe(scores2.clarity);
     });
+
+    it('should suppress extreme scores for silence-like low-quality signal', () => {
+      const silenceLike: AcousticFeatures = {
+        ...baseFeatures,
+        rms: 0.006,
+        voicedRatio: 0,
+        spectralCentroid: 3500,
+        zeroCrossingRate: 0.18,
+      };
+
+      const scores = calculateScores(silenceLike);
+
+      expect(scores.energy).toBeLessThanOrEqual(35);
+      expect(scores.tension).toBeLessThanOrEqual(35);
+      expect(scores.clarity).toBeLessThanOrEqual(35);
+    });
   });
 
   describe('calculateConfidence', () => {

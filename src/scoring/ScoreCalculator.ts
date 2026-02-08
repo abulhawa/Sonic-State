@@ -40,6 +40,16 @@ function normalizeToScore(
 }
 
 /**
+ * Estimate how trustworthy score magnitudes are (0-1).
+ * Quiet or mostly-unvoiced clips should produce conservative scores.
+ */
+function signalQuality(features: AcousticFeatures): number {
+  const rmsQuality = clamp(lerp(features.rms, 0.015, 0.05, 0, 1), 0, 1);
+  const voicedQuality = clamp(lerp(features.voicedRatio, 0.1, 0.4, 0, 1), 0, 1);
+  return rmsQuality * voicedQuality;
+}
+
+/**
  * Calculate Energy score from features
  * Based on: RMS energy (70%) + Spectral centroid (30%)
  * Higher RMS and brighter sound = higher energy
@@ -108,6 +118,17 @@ export function calculateClarity(features: AcousticFeatures): number {
  * Pure function - same input always produces same output
  */
 export function calculateScores(features: AcousticFeatures): VoiceScores {
+  const quality = signalQuality(features);
+
+  // Low-quality signal: suppress extreme bars so silence/noise does not look "high energy".
+  if (quality < 0.25) {
+    return {
+      energy: Math.round(clamp(calculateEnergy(features) * quality, 0, 35)),
+      tension: Math.round(clamp(calculateTension(features) * quality, 0, 35)),
+      clarity: Math.round(clamp(calculateClarity(features) * quality, 0, 35)),
+    };
+  }
+
   return {
     energy: calculateEnergy(features),
     tension: calculateTension(features),
