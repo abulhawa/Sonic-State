@@ -5,6 +5,7 @@
 
 import React, { useEffect } from 'react';
 import { LogBox } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AppNavigator from '@/navigation/AppNavigator';
 import Logger from '@/utils/Logger';
 
@@ -18,7 +19,11 @@ const App: React.FC = () => {
     Logger.log('app_started');
   }, []);
 
-  return <AppNavigator />;
+  return (
+    <SafeAreaProvider>
+      <AppNavigator />
+    </SafeAreaProvider>
+  );
 };
 
 export default App;
