@@ -37,9 +37,12 @@
     },
     "plugins": [
       [
-        "expo-av",
+        "expo-audio",
         {
-          "microphonePermission": "Sonic State needs microphone access to analyze your voice for 30 seconds. Nothing is recorded or stored."
+          "microphonePermission": "Sonic State needs microphone access to analyze your voice for 30 seconds. Nothing is recorded or stored.",
+          "recordAudioAndroid": true,
+          "enableBackgroundRecording": false,
+          "enableBackgroundPlayback": false
         }
       ]
     ]
