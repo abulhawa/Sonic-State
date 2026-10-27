@@ -197,7 +197,7 @@ const RecordingScreen: React.FC<RecordingScreenProps> = ({ navigation }) => {
       <View style={styles.content}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerText}>Recording...</Text>
+          <Text style={styles.headerText}>{isRecording ? 'Recording...' : 'Starting microphone...'}</Text>
         </View>
 
         {/* Timer Display */}
@@ -222,6 +222,7 @@ const RecordingScreen: React.FC<RecordingScreenProps> = ({ navigation }) => {
           <TouchableOpacity
             style={styles.stopButton}
             onPress={handleStop}
+            disabled={!isRecording}
             activeOpacity={0.8}
           >
             <View style={styles.stopIcon} />
