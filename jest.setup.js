@@ -1,25 +1,11 @@
-// Jest setup file
-// Add any global test configurations here
-
-// Mock Expo modules
-jest.mock('expo-av', () => ({
-  Audio: {
-    requestPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'granted' })),
-    getPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'granted' })),
-    setAudioModeAsync: jest.fn(() => Promise.resolve()),
-    Recording: {
-      createAsync: jest.fn(() => Promise.resolve({
-        recording: {
-          stopAndUnloadAsync: jest.fn(() => Promise.resolve()),
-          getURI: jest.fn(() => 'file://test.wav'),
-          getStatusAsync: jest.fn(() => Promise.resolve({ isRecording: false })),
-        },
-      })),
-    },
-    AndroidOutputFormat: { DEFAULT: 0 },
-    AndroidAudioEncoder: { DEFAULT: 0 },
-    IOSAudioQuality: { HIGH: 96 },
+// Expo SDK 58 audio stream permission and mode mocks.
+jest.mock('expo-audio', () => ({
+  AudioModule: {
+    requestRecordingPermissionsAsync: jest.fn(async () => ({ granted: true, status: 'granted' })),
+    getRecordingPermissionsAsync: jest.fn(async () => ({ granted: true, status: 'granted' })),
   },
+  setAudioModeAsync: jest.fn(async () => undefined),
+  useAudioStream: jest.fn(() => ({ stream: { start: jest.fn(), stop: jest.fn() } })),
 }));
 
 // Mock expo-status-bar
