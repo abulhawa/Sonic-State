@@ -152,6 +152,9 @@ Priority-ordered rules include:
 8. High clarity
 9. Balanced default
 
+## Assets before publishing
+
+The repository currently contains PNG asset placeholders, not real icon and splash images.\nThe invalid PNG paths were removed from app.json to permit Expo SDK 58 validation.\nCreate and configure actual app icons and splash assets before a store release.\n
 ## Release and Deployment
 
 Recommended flow:
