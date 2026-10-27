@@ -103,10 +103,6 @@ const RecordingScreen: React.FC<RecordingScreenProps> = ({ navigation }) => {
     }
   }, [navigation, stopTimer]);
 
-  // Timer callback always invokes the current handler, avoiding a stale state closure.
-  const handleStopRef = useRef(handleStop);
-  handleStopRef.current = handleStop;
-
   useEffect(() => {
     let cancelled = false;
     mountedRef.current = true;
@@ -132,7 +128,7 @@ const RecordingScreen: React.FC<RecordingScreenProps> = ({ navigation }) => {
         timerRef.current = setInterval(() => {
           const elapsed = session.getElapsedMs();
           setElapsedMs(elapsed);
-          if (elapsed >= TARGET_DURATION_MS) void handleStopRef.current();
+          if (elapsed >= TARGET_DURATION_MS) void handleStop();
         }, 100);
       } catch (error) {
         if (cancelled) return;
@@ -151,7 +147,7 @@ const RecordingScreen: React.FC<RecordingScreenProps> = ({ navigation }) => {
       void cleanupRecording(session);
       chunksRef.current = [];
     };
-  }, [navigation, stream, stopTimer]);
+  }, [navigation, stream, stopTimer, handleStop]);
 
   const handleCancel = useCallback(async () => {
     if (stoppingRef.current) return;
