@@ -26,7 +26,7 @@ Sonic State analyzes a 30-second voice recording and returns:
 
 Sonic State is designed for zero data collection.
 
-- No recordings are persisted
+- Captured PCM exists only temporarily in memory and is never persisted
 - No user IDs or tracking identifiers
 - No external analysis APIs
 - Audio buffers are released after analysis
@@ -34,14 +34,14 @@ Sonic State is designed for zero data collection.
 ## Tech Stack
 
 - React Native + Expo (TypeScript)
-- Expo AV for recording
+- Expo Audio PCM microphone stream for recording
 - React Navigation (stack)
 - Pure TypeScript audio analysis pipeline
 - On-device feature extraction and deterministic scoring
 
 ## Requirements
 
-- Node.js 18+
+- Node.js 22.13+
 - npm
 - Expo Go app on phone (optional, for device testing)
 - Android Studio or Xcode (optional, for emulator/simulator)
@@ -80,6 +80,8 @@ npm test
 npm run test:watch
 npm run typecheck
 npm run lint
+npx expo install --check
+npx expo-doctor
 ```
 
 Current unit test suites:
@@ -150,6 +152,9 @@ Priority-ordered rules include:
 8. High clarity
 9. Balanced default
 
+## Assets before publishing
+
+The repository currently contains PNG asset placeholders, not real icon and splash images.\nThe invalid PNG paths were removed from app.json to permit Expo SDK 58 validation.\nCreate and configure actual app icons and splash assets before a store release.\n
 ## Release and Deployment
 
 Recommended flow:

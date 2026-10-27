@@ -1,9 +1,7 @@
 /**
- * Recording Screen
- * 30-second countdown recording with stop button
+ * Recording screen: capture up to 30 seconds of actual PCM audio in memory.
  */
-
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,8 +12,15 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { Audio } from 'expo-av';
-import { startRecording, cleanupRecording } from '@/audio/AudioRecorder';
+import { useAudioStream, type AudioStreamBuffer, type AudioStreamOptions } from 'expo-audio';
+import {
+  startRecording,
+  cleanupRecording,
+  concatenatePcmChunks,
+  checkMicrophonePermission,
+  requestMicrophonePermission,
+  type RecordingSession,
+} from '@/audio/AudioRecorder';
 import { setPendingAudioBuffer } from '@/audio/AudioBufferStore';
 import Logger from '@/utils/Logger';
 
@@ -29,145 +34,131 @@ type RecordingScreenProps = {
   navigation: StackNavigationProp<RootStackParamList, 'Recording'>;
 };
 
-const TARGET_DURATION_MS = 30000; // 30 seconds
-const MIN_DURATION_MS = 3000; // Minimum 3 seconds
+const TARGET_DURATION_MS = 30000;
+const MIN_DURATION_MS = 3000;
 
 const RecordingScreen: React.FC<RecordingScreenProps> = ({ navigation }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [permissionDenied, setPermissionDenied] = useState(false);
-  const recordingRef = useRef<{
-    stop: () => Promise<{
-      samples: Float32Array;
-      sampleRate: number;
-      channels: number;
-      durationMs: number;
-    }>;
-    getElapsedMs: () => number;
-  } | null>(null);
+  const recordingRef = useRef<RecordingSession | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const chunksRef = useRef<Float32Array[]>([]);
+  const actualSampleRateRef = useRef<number>(0);
+  const stoppingRef = useRef(false);
+  const mountedRef = useRef(true);
 
-  // Format time display (MM:SS)
-  const formatTime = (ms: number): string => {
-    const totalSeconds = Math.floor(ms / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  };
-
-  // Start recording on mount
-  useEffect(() => {
-    const initRecording = async () => {
-      try {
-        // Check permission first
-        const { status } = await Audio.getPermissionsAsync();
-        if (status !== 'granted') {
-          const { status: newStatus } = await Audio.requestPermissionsAsync();
-          if (newStatus !== 'granted') {
-            setPermissionDenied(true);
-            return;
-          }
-        }
-
-        // Start recording
-        const session = await startRecording();
-        recordingRef.current = session;
-        setIsRecording(true);
-
-        // Start timer
-        timerRef.current = setInterval(() => {
-          const elapsed = session.getElapsedMs();
-          setElapsedMs(elapsed);
-
-          // Auto-stop at 30 seconds
-          if (elapsed >= TARGET_DURATION_MS) {
-            handleStop();
-          }
-        }, 100);
-      } catch (error) {
-        Logger.error('Failed to start recording', error);
-        Alert.alert(
-          'Recording Error',
-          'Could not start recording. Please check microphone permissions.',
-          [{ text: 'OK', onPress: () => navigation.goBack() }]
-        );
-      }
-    };
-
-    initRecording();
-
-    // Cleanup on unmount
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-      if (recordingRef.current) {
-        // Don't await - just fire and forget cleanup
-        cleanupRecording(recordingRef.current as unknown as Audio.Recording);
-      }
-    };
-  }, [navigation]);
-
-  const handleStop = useCallback(async () => {
-    if (!recordingRef.current || !isRecording) return;
-
-    // Clear timer
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-
-    const elapsed = recordingRef.current.getElapsedMs();
-
-    // Check minimum duration
-    if (elapsed < MIN_DURATION_MS) {
-      Alert.alert(
-        'Too Short',
-        `Please record for at least ${MIN_DURATION_MS / 1000} seconds.`,
-        [{ text: 'Continue', style: 'cancel' }]
-      );
-      // Restart timer
-      timerRef.current = setInterval(() => {
-        if (recordingRef.current) {
-          setElapsedMs(recordingRef.current.getElapsedMs());
-        }
-      }, 100);
+  const capturePcm = useCallback((buffer: AudioStreamBuffer) => {
+    if (buffer.channels !== 1 || buffer.sampleRate <= 0) return;
+    if (actualSampleRateRef.current && actualSampleRateRef.current !== buffer.sampleRate) {
+      Logger.warn('Microphone sample rate changed mid-capture');
       return;
     }
+    actualSampleRateRef.current = buffer.sampleRate;
+    // Copy the buffer because the native audio stream may reuse its backing memory.
+    chunksRef.current.push(new Float32Array(buffer.data.slice(0)));
+  }, []);
+  const streamOptions = useMemo<AudioStreamOptions>(() => ({
+    sampleRate: 16000,
+    channels: 1,
+    encoding: 'float32',
+    onBuffer: capturePcm,
+  }), [capturePcm]);
+  const { stream } = useAudioStream(streamOptions);
 
+  const formatTime = (ms: number): string => {
+    const totalSeconds = Math.floor(ms / 1000);
+    return `${Math.floor(totalSeconds / 60).toString().padStart(2, '0')}:${(totalSeconds % 60).toString().padStart(2, '0')}`;
+  };
+
+  const stopTimer = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = null;
+  }, []);
+
+  const handleStop = useCallback(async () => {
+    const session = recordingRef.current;
+    if (!session || stoppingRef.current) return;
+    if (session.getElapsedMs() < MIN_DURATION_MS) {
+      Alert.alert('Too Short', 'Please record for at least 3 seconds.');
+      return;
+    }
+    stoppingRef.current = true;
+    stopTimer();
+    recordingRef.current = null;
     setIsRecording(false);
-
     try {
-      // Stop recording and get buffer
-      const audioBuffer = await recordingRef.current.stop();
-      recordingRef.current = null;
-
-      // Navigate to processing
-      setPendingAudioBuffer(audioBuffer);
+      const buffer = await session.stop();
+      if (!mountedRef.current) return;
+      setPendingAudioBuffer(buffer);
       navigation.replace('Processing');
     } catch (error) {
       Logger.error('Failed to stop recording', error);
-      Alert.alert(
-        'Error',
-        'Failed to process recording. Please try again.',
-        [{ text: 'OK', onPress: () => navigation.goBack() }]
-      );
+      if (mountedRef.current) {
+        Alert.alert('Error', 'Failed to process recording. Please try again.',
+          [{ text: 'OK', onPress: () => navigation.goBack() }]);
+      }
+    } finally {
+      chunksRef.current = [];
     }
-  }, [isRecording, navigation]);
+  }, [navigation, stopTimer]);
+
+  useEffect(() => {
+    let cancelled = false;
+    mountedRef.current = true;
+    const initRecording = async () => {
+      try {
+        const granted = await checkMicrophonePermission() || await requestMicrophonePermission();
+        if (cancelled) return;
+        if (!granted) {
+          setPermissionDenied(true);
+          return;
+        }
+        chunksRef.current = [];
+        actualSampleRateRef.current = 0;
+        const session = await startRecording(stream, () =>
+          concatenatePcmChunks(chunksRef.current, actualSampleRateRef.current)
+        );
+        if (cancelled) {
+          await cleanupRecording(session);
+          return;
+        }
+        recordingRef.current = session;
+        setIsRecording(true);
+        timerRef.current = setInterval(() => {
+          const elapsed = session.getElapsedMs();
+          setElapsedMs(elapsed);
+          if (elapsed >= TARGET_DURATION_MS) void handleStop();
+        }, 100);
+      } catch (error) {
+        if (cancelled) return;
+        Logger.error('Failed to start recording', error);
+        Alert.alert('Recording Error', 'Could not start recording. Please check microphone permissions.',
+          [{ text: 'OK', onPress: () => navigation.goBack() }]);
+      }
+    };
+    void initRecording();
+    return () => {
+      cancelled = true;
+      mountedRef.current = false;
+      stopTimer();
+      const session = recordingRef.current;
+      recordingRef.current = null;
+      void cleanupRecording(session);
+      chunksRef.current = [];
+    };
+  }, [navigation, stream, stopTimer, handleStop]);
 
   const handleCancel = useCallback(async () => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-    }
-
-    if (recordingRef.current) {
-      await cleanupRecording(recordingRef.current as unknown as Audio.Recording);
-      recordingRef.current = null;
-    }
-
-    Logger.log('record_stopped_early');
+    if (stoppingRef.current) return;
+    stoppingRef.current = true;
+    stopTimer();
+    const session = recordingRef.current;
+    recordingRef.current = null;
+    await cleanupRecording(session);
+    chunksRef.current = [];
     navigation.goBack();
-  }, [navigation]);
+  }, [navigation, stopTimer]);
 
   // Permission denied view
   if (permissionDenied) {
@@ -202,7 +193,7 @@ const RecordingScreen: React.FC<RecordingScreenProps> = ({ navigation }) => {
       <View style={styles.content}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerText}>Recording...</Text>
+          <Text style={styles.headerText}>{isRecording ? 'Recording...' : 'Starting microphone...'}</Text>
         </View>
 
         {/* Timer Display */}
@@ -227,6 +218,7 @@ const RecordingScreen: React.FC<RecordingScreenProps> = ({ navigation }) => {
           <TouchableOpacity
             style={styles.stopButton}
             onPress={handleStop}
+            disabled={!isRecording}
             activeOpacity={0.8}
           >
             <View style={styles.stopIcon} />
