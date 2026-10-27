@@ -1,0 +1,48 @@
+# One-shot upgrade job. Remove after the lockfile is regenerated.
+name: Refresh dependency lockfile
+
+on:
+  push:
+    branches: [security/update-dependencies-2026-10-27]
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out upgrade branch
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install updated manifest
+        run: npm install --no-fund --no-audit
+      - name: Update non-SDK package manifests
+        run: |
+          npx --yes npm-check-updates@latest -u --target latest \
+            --reject 'expo,expo-audio,expo-status-bar,babel-preset-expo,jest-expo,react,react-native,react-native-gesture-handler,react-native-safe-area-context,react-native-screens,react-native-svg,@types/react,eslint,@eslint/js,typescript'
+      - name: Resolve dependency tree
+        run: |
+          npm install --no-fund --no-audit
+          npx expo install --fix
+          npm audit fix --no-fund || true
+      - name: Record actual dependency versions
+        run: |
+          npm ls --depth=0 || true
+          npm audit --audit-level=high || true
+          npx expo install --check || true
+      - name: Commit manifest and lockfile to branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add package.json package-lock.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'build: regenerate npm lockfile and update non-SDK dependencies'
+            git push origin HEAD:security/update-dependencies-2026-10-27
+          fi
