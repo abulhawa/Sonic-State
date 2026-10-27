@@ -56,5 +56,10 @@
       "^@/(.*)$": "<rootDir>/src/$1"
     }
   },
-  "private": true
+  "private": true,
+  "overrides": {
+    "@expo/cli": {
+      "zod": "^4.6.7"
+    }
+  }
 }
