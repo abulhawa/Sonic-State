@@ -9,8 +9,8 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  StatusBar,
 } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import PrivacyBadge from '@/components/PrivacyBadge';
@@ -55,7 +55,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0A0A0F" />
+      <StatusBar style="light" />
 
       <View style={styles.content}>
         {/* Header */}

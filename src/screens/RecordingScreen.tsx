@@ -9,9 +9,9 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  StatusBar,
   Alert,
 } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Audio } from 'expo-av';
@@ -45,7 +45,7 @@ const RecordingScreen: React.FC<RecordingScreenProps> = ({ navigation }) => {
     }>;
     getElapsedMs: () => number;
   } | null>(null);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Format time display (MM:SS)
   const formatTime = (ms: number): string => {
@@ -173,7 +173,7 @@ const RecordingScreen: React.FC<RecordingScreenProps> = ({ navigation }) => {
   if (permissionDenied) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="#0A0A0F" />
+        <StatusBar style="light" />
         <View style={styles.permissionContainer}>
           <Text style={styles.permissionIcon}>🎙️</Text>
           <Text style={styles.permissionTitle}>Microphone Access Needed</Text>
@@ -197,7 +197,7 @@ const RecordingScreen: React.FC<RecordingScreenProps> = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0A0A0F" />
+      <StatusBar style="light" />
 
       <View style={styles.content}>
         {/* Header */}

@@ -35,7 +35,7 @@ const AppNavigator: React.FC = () => {
         screenOptions={{
           headerShown: false,
           cardStyle: { backgroundColor: '#0A0A0F' },
-          animationEnabled: true,
+          animation: 'default',
         }}
       >
         <Stack.Screen name="Home" component={HomeScreen} />

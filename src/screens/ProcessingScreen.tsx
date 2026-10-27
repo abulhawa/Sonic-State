@@ -9,8 +9,8 @@ import {
   Text,
   StyleSheet,
   ActivityIndicator,
-  StatusBar,
 } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { extractFeatures } from '@/analysis/FeatureExtractor';
@@ -116,7 +116,7 @@ const ProcessingScreen: React.FC<ProcessingScreenProps> = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0A0A0F" />
+      <StatusBar style="light" />
 
       <View style={styles.content}>
         <View style={styles.spinnerContainer}>
